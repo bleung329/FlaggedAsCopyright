@@ -5,7 +5,17 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+
 #define KEY 42
+
+union semun 
+{
+   int              val;    /* Value for SETVAL */
+   struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
+   unsigned short  *array;  /* Array for GETALL, SETALL */
+   struct seminfo  *__buf;  /* Buffer for IPC_INFO                               (Linux-specific) */
+} data;
+
 
 int semcreate(int val)
 {
@@ -18,7 +28,7 @@ int semcreate(int val)
 	}
 	else
 	{
-		semctl(KEY, 0, SETVAL, val);
+		printf("%d\n",semctl(semid, 0, SETVAL, val));
 		printf("Tada, you have a semaphore now. It's at %d\n",semid);
 	}
 	return semid;
@@ -26,18 +36,19 @@ int semcreate(int val)
 
 int semview()
 {
-	int semval = semget(KEY,1,0666);
-	semctl(semval,1,GETVAL);
-	if (semval==-1)
+	int semval = semget(KEY, 1, 0600);
+	int semcut = semctl(semval, 0, GETVAL);
+	printf("%d\n",semcut);
+	if (semcut<0)
 	{
 		printf("You need to create a semaphore first\n");
 		return 0;
 	}
 	else
 	{
-		printf("The semaphore value is: %d\n",semval);
+		printf("The semaphore value is: %d\n",semcut);
 	}
-	return semval;
+	return data.val+0;
 }
 
 int semclose()
@@ -66,7 +77,7 @@ int main(int argc, char **argv)
 		}
 		if ((!strcmp(argv[1],"-c")&&(argc==3)))
 		{
-			int val = argv[2]-'0';
+			int val = atoi(argv[2]);
 			semcreate(val);
 		}
 	}
